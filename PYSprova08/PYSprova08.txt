@@ -1,0 +1,411 @@
+--------------------------------  base_dados.py  --------------------------------
+# Produtos que podem ser comprados nessa loja
+produtos = [('Patch bordado', 15.82),
+            ('Disco de vinil', 3.95),
+            ('Fone de ouvido', 68.89),
+            ('Kindle', 498.99),
+            ('Palmilhas', 39.98)]
+carrinho = {'TOTAL': 0}
+
+
+
+
+
+
+
+
+
+
+--------------------------------  sistema.py  --------------------------------
+from base_dados import *
+
+
+def ver_produtos() -> str:
+    tab = '\t'
+    mostrar = f"\n\n{8*'-'}  PRODUTOS À VENDA  {8*'-'}"
+    escolha = 1
+    for produto in produtos:
+        palavra = len(produto[0])//4
+        preco = produto[1]
+        mostrar += f"\n{escolha}. {produto[0]}:{(5-palavra)*tab}R$ {preco:.2f}"
+        escolha += 1
+    return mostrar
+
+
+def nome_produto(produto: int) -> str:
+    return produtos[produto-1][0]
+
+
+def informacoes(produto: int) -> str:
+    """Função destinada a uso interno do programa"""
+    contar = 0
+    if produto > len(carrinho):
+        return '\nProduto não encontrado...'
+    for key in carrinho.keys():
+        if produto == contar:
+            return key
+        contar += 1
+    return '\nProduto não encontrado...'
+
+
+def tipo_numerico(num_txt: str) -> bool:
+    num = True
+    if len(num_txt) == 0:
+        num = False
+    for char in num_txt:
+        if char not in '0123456789':
+            num = False
+            break
+    return num
+
+
+def calcular_total():
+    carrinho['TOTAL'] = 0
+    total = 0
+    for item in carrinho:
+        for prod in produtos:
+            if item == prod[0]:
+                total += carrinho[item] * prod[1]
+                break
+    carrinho['TOTAL'] = total
+
+
+# ----------  APENAS FUNCIONÁRIOS TÊM ACESSO A ESSAS FUNÇÕES  ----------
+
+
+def cadastrar_produto(nome: str, preco_unitario: float) -> str:
+    for produto in produtos:
+        if nome.capitalize() == produto[0]:
+            return '\nProduto já existente.'
+    produto = (nome.capitalize(), preco_unitario)
+    produtos.append(produto)
+    return '\nProduto cadastrado com sucesso!'
+
+
+def atualizar_produto(produto: int, *novos_dados) -> str:
+    if produto < 1 or produto > len(produtos):                    # Checando se a opção é inválida
+        return '\nProduto não encontrado'
+    indice = produto - 1
+    if len(novos_dados) == 1:                                     # Verificando o tamanho da tupla *args
+        if type(novos_dados[0]) == str:                         # Verificando o tipo de dado
+            novo_nome = novos_dados[0]                                    # Guardando novo nome se string
+            preco_un = produtos[indice][1]
+            produtos[indice] = (novo_nome, preco_un)                      # Atualizando apenas o nome
+        elif type(novos_dados[0]) == float:                           # Verificando o tipo de dado
+            nome = produtos[indice][0]
+            novo_preco_un = novos_dados[0]                                # Guardando novo preço se número
+            produtos[indice] = (nome, novo_preco_un)                      # Atualizando apenas o preço
+        else:                                                         # Verificando o tipo de dado
+            return 'Inválido!'                                            # Descartando qualquer outro tipo
+    elif len(novos_dados) > 2:                                    # Verificando o tamanho da tupla  |  Descartando se >2
+        return 'Inválido!\nInforme apenas o novo nome e/ou o preço unitário ao tentar novamente.'
+    elif len(novos_dados) == 0:                                   # Verificando o tabanho da tupla  |  Descartando se 0
+        return 'Inválido!\nInforme pelo menos o novo nome ou o novo preço unitário ao tentar novamente.'
+    else:                                                         # Verificando o tamanho da tupla
+        novo_nome = ''                                                # Inicializando variáveis se 2
+        novo_preco_un = 0
+        for tipo in novos_dados:                                      # Percorrendo a tupla *args
+            if type(tipo) == str:                                   # Verificando o tipo de dado
+                novo_nome = tipo                                              # Armazenando se string
+            elif type(tipo) == float:                # Verificando o tipo de dado
+                novo_preco_un = tipo                                          # Armazenando se número
+            else:                                                         # Verificando o tipo de dado
+                return '\nAlgum dos novos dados inseridos é inválido!'        # Descartando qualquer outro tipo
+            produtos[indice] = (novo_nome, novo_preco_un)            # Atualizando produto na lista
+    return '\nProduto atualizado com sucesso!'
+
+
+def deletar_produto(produto: int) -> str:
+    if produto > len(produtos) or produto < 1:
+        return '\nProduto não encontrado.'
+    produtos.pop(produto - 1)
+    return '\nProduto deletado com sucesso.'
+
+
+# ---------------  CLIENTES TAMBÉM PODEM USAR ESSAS FUNÇÕES  ---------------
+
+
+def adicionar_ao_carrinho(produto: int, quantidade: int = 1) -> str:
+    total = carrinho['TOTAL']
+    nome = produtos[produto-1][0]
+    preco_un = produtos[produto-1][1]
+    total += preco_un * quantidade
+    if nome in carrinho:
+        quantidade += carrinho[nome]
+    carrinho.update([(nome, quantidade), ('TOTAL', total)])
+    return '\nProduto adicionado com sucesso!'
+
+
+def ver_carrinho() -> str:
+    calcular_total()
+    num_prod = 1
+    mostrar = f"\n\n{10*'-'}  MEU CARRINHO  {10*'-'}\n"
+    for key in carrinho.keys():
+        if key == 'TOTAL':
+            continue
+        preco_un = 0
+        for produto in produtos:
+            if key == produto[0]:
+                preco_un = produto[1]
+                break
+        mostrar += f"{num_prod}. {key}  ->  {carrinho[key]} x  R$ {preco_un:.2f}\n"
+        num_prod += 1
+    mostrar += 35*'-'
+    mostrar += f"\nTOTAL:  R$ {carrinho['TOTAL']:.2f}\n\n"
+    return mostrar
+
+
+def remover_item(produto: int, quantidade: int = 1) -> str:
+    key = informacoes(produto)
+    if key in carrinho:
+        if carrinho[key] == quantidade:
+            carrinho.pop(key)
+            return '\nProduto removido com sucesso.'
+        carrinho[key] -= quantidade
+        return '\nItens removidos com sucesso.'
+    return key
+
+
+if __name__ == '__main__':
+    print('Tudo testado e redondo ^^')
+
+
+
+
+
+
+
+
+
+
+--------------------------------  monitor.py  --------------------------------
+from sistema import *
+
+correcao = input('Digite seu nome: ').title()
+print(f"Tenha uma ótima correção, {correcao} XD\n")
+limpar = '\n'
+encerrar = False                                                            # Variável para sair do loop principal
+while True:
+    if encerrar:                                                            # Se verdadeira encerra
+        break
+    print(50*'-')
+    identificacao = input('Identificações:\n'
+                          '    1. Administração\n'
+                          '    2. Cliente\n'
+                          'Informe o número equivalente à sua identificação: ')
+
+    match identificacao:
+        # ADMINISTRADOR DA LOJA ONLINE
+        case '1':
+            usuario = input(
+                'Informe o usuário do InfinityApp: '
+            ).lower()
+            if 'dev' not in usuario:                                        # IDENTIFICAÇÃO FALHOU
+                print(2 * limpar, 'Usuário inválido!', 3 * limpar)
+                continue
+            else:                                                           # IDENTIFICAÇÃO VERIFICADA
+                print(f"{10*limpar}Bem vinde ao sistema da loja, {correcao}!")
+                while True:                                                 # LOOP SECUNDÁRIO - SISTEMA DA LOJA
+                    acao = input(f'{6*"-"}  SISTEMA DA LOJA  {6*"-"}\n'
+                                 f'    1. Cadastrar produto\n'
+                                 f'    2. Atualizar produto\n'
+                                 f'    3. Deletar produto\n'
+                                 f'    4. Voltar menu funcionário/cliente\n'
+                                 f'    5. Encerrar correção\n'
+                                 f'Informe o número correspondente à ação desejada: ')
+                    match acao:
+                        # CADASTRAR NOVO PRODUTO
+                        case '1':
+                            nome_cadastro = input(
+                                'Informe o nome do produto: '
+                            ).capitalize()
+                            preco_unitario = float(
+                                input(
+                                    f'Informe o preço unitário de {nome_cadastro}:\nR$ '
+                                ).replace(',', '.')
+                            )
+                            print(cadastrar_produto(nome_cadastro, preco_unitario))
+
+                        # ATUALIZAR PRODUTO EXISTENTE
+                        case '2':
+                            print(ver_produtos())
+                            produto_atualizar = input('Informe o produto que deseja atualizar: ')
+
+                            if tipo_numerico(produto_atualizar):
+                                produto_atualizar = int(produto_atualizar)
+                                if 0 < produto_atualizar <= len(produtos):
+
+                                    nome_atualizar = produtos[produto_atualizar - 1][0]
+                                    preco_atualizar = produtos[produto_atualizar - 1][1]
+                                    opcao = input(f'Opções de atualização:\n'
+                                                  f'    1. Apenas nome de {nome_atualizar}\n'
+                                                  f'    2. Apenas valor unitário de {nome_atualizar}\n'
+                                                  f'    3. Substituir {nome_atualizar}\n'
+                                                  f'    4. Cancelar\n'
+                                                  f'Informe o número equivalente à ação desejada: ')
+                                    while (opcao not in '1234'
+                                           or len(opcao) != 1):                         # LOOP TERCIÁRIO - VERIFICAÇÃO DE ERRO
+                                        print('Opção inválida!')
+                                        opcao = input(f'Opções de atualização:\n'
+                                                      f'    1. Apenas nome de {nome_atualizar}\n'
+                                                      f'    2. Apenas valor unitário de {nome_atualizar}\n'
+                                                      f'    3. Substituir {nome_atualizar}\n'
+                                                      f'    4. Cancelar\n'
+                                                      f'Informe o número equivalente à ação desejada: ')
+                                    match opcao:
+                                        # ATUALIZAR NOME SEM MUDAR PREÇO
+                                        case '1':
+                                            nome_atualizado = input(
+                                                f'Informe o novo produto de R$ {preco_atualizar:.2f}: '
+                                            ).capitalize()
+                                            print(atualizar_produto(produto_atualizar, nome_atualizado))
+
+                                        # ATUALIZAR PREÇO SEM MUDAR NOME
+                                        case '2':
+                                            preco_atualizado = float(
+                                                input(
+                                                    f'Informe o novo preço unitário de {nome_atualizar}:\nR$ '
+                                                ).replace(',', '.')
+                                            )
+                                            print(atualizar_produto(produto_atualizar, preco_atualizado))
+
+                                        # ATUALIZAR TANTO NOME QUANTO PREÇO
+                                        case '3':
+                                            nome_atualizado = input(
+                                                f'Informe o novo produto para substituir {nome_atualizar}: '
+                                            ).capitalize()
+                                            preco_atualizado = float(
+                                                input(
+                                                    f'Informe o preço unitário de {nome_atualizado}:\nR$ '
+                                                ).replace(',', '.')
+                                            )
+                                            print(
+                                                atualizar_produto(produto_atualizar,
+                                                                  nome_atualizado,
+                                                                  preco_atualizado)
+                                            )
+                                        # CANCELAR OPERAÇÃO
+                                        case '4':
+                                            print(10 * limpar)
+                                            continue
+                                else:
+                                    print(2*limpar, "Opção inválida!", 3*limpar)
+                                    continue
+
+                        # DELETAR PRODUTO
+                        case '3':
+                            print(ver_produtos())
+                            produto_deletar = int(input('Informe o produto que deseja deletar: '))
+                            print(deletar_produto(produto_deletar))
+
+                        # SAIR DO SISTEMA DA LOJA
+                        case '4':
+                            print(10*limpar)
+                            break
+
+                        # ENCERRAR PROGRAMA
+                        case '5':
+                            print(10*limpar)
+                            encerrar = True
+                            break
+
+                        # TRATAMENTO DE ERROS
+                        case _:
+                            print('Opção inválida!', 3*limpar)
+                            continue
+                    print(10 * limpar)
+
+        # SITE DE COMPRAS
+        case '2':
+            print(f'{3*limpar}Seja bem-vinde, {correcao}! Boas compras :)')
+            while True:
+                acao = input(f'{10 * "-"}  AÇÕES  {10 * "-"}\n'
+                             f'    1. Adicionar ao carrinho\n'
+                             f'    2. Remover do carrinho\n'
+                             f'    3. Ver carrinho\n'
+                             f'    4. Voltar ao primeiro menu\n'
+                             f'    5. Finalizar compra\n'
+                             f'Informe o número equivalente à ação desejada: ')
+                match acao:
+                    # ADICIONAR AO CARRINHO
+                    case '1':
+                        print(ver_produtos())
+                        produto_add = input('Informe o número equivalente ao produto desejado: ')
+
+                        if tipo_numerico(produto_add):
+                            num_prod = int(produto_add)
+                            if num_prod > len(produtos):
+                                print('Produto inexistente.')
+                                continue
+                            else:
+
+                                nome_prod = nome_produto(num_prod)
+                                qntd_add = input(f'Informe a quantidade de {nome_prod} deseja comprar: ')
+
+                                if tipo_numerico(qntd_add):
+                                    qntd_add = int(qntd_add)
+                                    print(adicionar_ao_carrinho(num_prod, qntd_add))
+                                else:
+                                    print(adicionar_ao_carrinho(num_prod))
+                                    print('Porém não foi possível identificar a quantidade, '
+                                          'então apenas uma unidade foi adicionada.')
+                        else:
+                            print(10*limpar)
+                            continue
+
+                    # REMOVER DO CARRINHO
+                    case '2':
+                        print(ver_carrinho())
+                        produto_remover = input('Informe o número equivalente ao produto que deseja remover: ')
+
+                        if tipo_numerico(produto_remover):
+                            produto_remover = int(produto_remover)
+                            nome_prod_rmv = informacoes(produto_remover)
+                            if nome_prod_rmv in carrinho:
+                                if carrinho[nome_prod_rmv] > 1:
+                                    qntd_remover = input(
+                                        f'Informe quantos itens de {nome_prod_rmv} deseja remover do carrinho: '
+                                    )
+                                    if tipo_numerico(qntd_remover):
+                                        qntd_remover = int(qntd_remover)
+                                        print(remover_item(produto_remover, qntd_remover))
+                                    else:
+                                        print(remover_item(produto_remover))
+                                        print('Porém não foi possível identificar a quantidade, '
+                                              'apenas uma unidade foi removida')
+                                else:
+                                    print(remover_item(produto_remover))
+                            else:
+                                print(nome_prod_rmv)
+                        else:
+                            print("Não foi possível identificar o produto.")
+                            continue
+
+                    # VER CARRINHO
+                    case '3':
+                        print(ver_carrinho())
+                        print(2*limpar)
+                        continue
+
+                    # FECHAR SITE
+                    case '4':
+                        print(10*limpar)
+                        break
+
+                    # ENCERRAR PROGRAMA
+                    case '5':
+                        print(10*limpar)
+                        encerrar = True
+                        print(f'Obridade e volte sempre, {correcao}!')
+                        print('Correção encerrada.')
+                        break
+                    case _:
+                        print('Opção inválida!')
+                print(10*limpar)
+        case _:
+            print(2*limpar, 'Opção inválida!', 3*limpar)
+            continue
+    print(20 * limpar)
+
+print(f'Espero que tenha gostado, {correcao} ^^\n'
+      f'Agora vá lá e aperte naquele 1 verdinho com gosto pra me dar 10 😜')
